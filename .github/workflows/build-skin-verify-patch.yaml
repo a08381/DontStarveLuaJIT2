@@ -1,0 +1,105 @@
+name: build skin verify patch
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: windows-2022
+    env:
+      PLUGIN_BUILD_CONFIG: RelWithDebInfo
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-bincache
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/.vcpkg-bincache,readwrite
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.vcpkg-bincache
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'CMakeLists.txt', 'cmake/custom-triplets/**') }}
+
+      - name: Restore ANGLE cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/3rd/angle
+            ${{ github.workspace }}/.angle-bincache
+          key: ${{ runner.os }}-angle-${{ hashFiles('tools/angle/**', 'cmake/ports/angle/**', 'cmake/custom-triplets/**', 'tools/setup_angle.py') }}
+
+      - name: Initialize MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - name: Set up CMake and Ninja
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.31.6
+          ninjaVersion: 1.11.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Prepare vcpkg cache directories
+        shell: bash
+        run: |
+          mkdir -p "${{ github.workspace }}/.vcpkg-bincache"
+          mkdir -p "${{ github.workspace }}/.angle-bincache"
+
+      - name: Set up vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: vcpkg.json
+
+      - name: Set up ANGLE
+        env:
+          VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.angle-bincache
+          VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/.angle-bincache,readwrite
+        shell: bash
+        run: |
+          python tools/setup_angle.py --release-only --vcpkg "${{ github.workspace }}/vcpkg/vcpkg.exe"
+
+      - name: Configure CMake
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: ninja-multi-vcpkg
+          configurePresetAdditionalArgs: "['-DENABLE_STEAM_SUPPORT=OFF']"
+
+      - name: Build plugin
+        shell: bash
+        run: |
+          cmake --build ./builds/ninja-multi-vcpkg \
+            --config "${{ env.PLUGIN_BUILD_CONFIG }}" \
+            --target plugin_skins_verify_patch
+
+      - name: Verify plugin output
+        shell: bash
+        run: |
+          plugin="builds/ninja-multi-vcpkg/src/DontStarveInjector/${{ env.PLUGIN_BUILD_CONFIG }}/plugins/plugin_skins_verify_patch/plugin_skins_verify_patch.dll"
+          if [ ! -f "$plugin" ]; then
+            echo "::error::Expected plugin DLL was not built: $plugin"
+            find builds/ninja-multi-vcpkg -type f -name plugin_skins_verify_patch.dll -print
+            exit 1
+          fi
+
+      - name: Upload Windows plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: skin-verify-patch-windows
+          path: builds/ninja-multi-vcpkg/src/DontStarveInjector/${{ env.PLUGIN_BUILD_CONFIG }}/plugins/plugin_skins_verify_patch/plugin_skins_verify_patch.dll
+          if-no-files-found: error
