@@ -6,6 +6,11 @@
 
   QQ群: 348368954
 
+## 文档
+
+- [安装、编译、Mod 与 Plugin 开发指南](docs/development-guide.zh-CN.md)
+- [Plugin 系统架构与扩展说明](docs/plugin-system.md)
+
 ## 注意
 
 请务必备份您的存档，因为我们无法保证插件不会导致存档损坏！

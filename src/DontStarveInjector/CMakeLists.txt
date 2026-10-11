@@ -346,7 +346,12 @@ if (_ds_gum_stage_ok)
         add_subdirectory(plugins/plugin_render_vbpool)
         add_subdirectory(plugins/plugin_render_angle)
         add_subdirectory(plugins/plugin_render_shadow)
-        list(APPEND _ds_gum_plugins plugin_render_vbpool plugin_render_angle plugin_render_shadow)
+        add_subdirectory(plugins/plugin_skins_verify_patch)
+        list(APPEND _ds_gum_plugins
+                plugin_render_vbpool
+                plugin_render_angle
+                plugin_render_shadow
+                plugin_skins_verify_patch)
     endif()
     foreach(_ds_gum_plugin IN LISTS _ds_gum_plugins)
         target_link_libraries(${_ds_gum_plugin} PRIVATE Frida::Gum)
@@ -354,7 +359,8 @@ if (_ds_gum_stage_ok)
     unset(_ds_gum_plugins)
 else()
     message(WARNING
-        "Skipping gum-using dynamic plugins (network.rpc / network.sim / sim.lagcomp / render.vbpool / render.angle / debug.profiler / fps.render / network.tick): "
+        "Skipping gum-using dynamic plugins (network.rpc / network.sim / sim.lagcomp / "
+        "render.vbpool / render.angle / debug.profiler / fps.render / network.tick / skins_verify_patch): "
         "shared gum stage not available (need 3rd/frida-gum/<plat> lib + Frida::Gum). "
         "Run tools/setup_frida_gum.py, then reconfigure.")
 endif()
@@ -645,9 +651,5 @@ endforeach()
         VERBATIM
     )
 endif()
-
-
-
-
 
 

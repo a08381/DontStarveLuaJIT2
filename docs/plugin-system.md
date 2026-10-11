@@ -103,8 +103,13 @@ Shipped modules today:
 | `plugin_render_vbpool` | `render.vbpool` | `DS_LUAJIT_set_vbpool_enabled` |
 | `plugin_render_shadow` | `render.shadow` | Sun-driven DynamicShadow (`GenerateVB`); Lua AfterModMain applies config |
 | `plugin_render_angle` | `render.angle` | `InitGameOpenGl` |
+| `plugin_skins_verify_patch` | `skins_verify_patch` | patch first executable hit for each supplied function signature |
 | `plugin_debug_profiler` | `debug.profiler` | **Optional.** Tracy / replace-profiler / FullGC / FrameGC. Soft no-op when missing; independent of `core.vm`. |
 | `plugin_dummy` | `debug.dummy` | log only |
+
+`plugin_skins_verify_patch` is a Windows-only, AlwaysOn native module. It scans the main
+executable's executable ranges and patches only the first match for each of its
+four signatures.
 
 ### core.vm internal modules
 
@@ -856,4 +861,3 @@ mods/<external_mod>/
 5. Users must **enable** the mod; clients see a risk confirmation dialog.
 
 Design: `docs/superpowers/specs/2026-08-08-external-plugin-discovery-design.md`.
-
